@@ -1,0 +1,68 @@
+package com.cxy.aienglishspeakingpracticecompanion.service.impl;
+
+import com.cxy.aienglishspeakingpracticecompanion.app.FileAsrApp;
+import com.cxy.aienglishspeakingpracticecompanion.app.SpeakApp;
+import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
+import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
+import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
+import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.util.UUID;
+
+@Service
+@Slf4j
+public class SpeakServiceImpl implements SpeakService {
+    @Resource
+    private FileAsrApp fileAsrApp;
+    @Resource
+    private SpeakApp speakApp;
+    @Override
+    public String speakWithAI(MultipartFile multipartFile,String sessionId) {
+        File localTempFile = null;
+        try {
+            // 1. 在服务器本地创建一个临时文件，避免文件名冲突 (比如：D:/temp/voice_xyz.wav)
+            String systemTempDir = System.getProperty("java.io.tmpdir");
+            // Codex 修改：保留前端上传音频的真实后缀，避免文件内容是 webm/m4a/mp3 却被保存成 wav。
+            String originalFilename = multipartFile.getOriginalFilename();
+            String suffix = (originalFilename != null && originalFilename.contains("."))
+                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                    : ".wav";
+            String customFileName = "voice_" + UUID.randomUUID() + suffix;
+            localTempFile = new File(systemTempDir, customFileName);
+
+            // 2. 将前端上传的流保存到这个临时文件中
+            multipartFile.transferTo(localTempFile);
+            log.info("临时物理文件大小: {} bytes", localTempFile.length());
+            log.info("前端音频文件已成功落地到服务器本地: {}", localTempFile.getAbsolutePath());
+
+            // 3. 扔给改版后的 FileAsrService 进行本地识别（SDK会自动把这个文件传给阿里）
+            String userRecognizedText = fileAsrApp.transcribeLocalFile(localTempFile);
+
+            if (userRecognizedText == null || userRecognizedText.trim().isEmpty()) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "识别结果为空");
+            }
+
+            // 4. 将识别出的文字喂给你的带多轮记忆的 LLM 大模型大脑
+            String aiReplyText = speakApp.audioSpeak(userRecognizedText, sessionId);
+
+            // 5. TODO将AI回复转换成语音
+            return aiReplyText;
+
+        } catch (Exception e) {
+            log.error("对话系统全链路发生故障", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"系统内部错误: " + e.getMessage());
+        } finally {
+            // 6. ⚡ 极其重要：不论成功还是失败，必须删除本地服务器的临时文件，防止撑爆磁盘空间
+            if (localTempFile != null && localTempFile.exists()) {
+                boolean deleted = localTempFile.delete();
+                log.info("临时音频文件清理状态: {}", deleted);
+            }
+        }
+    }
+
+}
