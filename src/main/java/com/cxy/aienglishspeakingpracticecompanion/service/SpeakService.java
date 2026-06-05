@@ -1,7 +1,8 @@
 package com.cxy.aienglishspeakingpracticecompanion.service;
 
+import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface SpeakService {
-   String speakWithAI(MultipartFile file,String sessionId);
+    VoiceChatResponse speakWithAI(MultipartFile file, String sessionId);
 }

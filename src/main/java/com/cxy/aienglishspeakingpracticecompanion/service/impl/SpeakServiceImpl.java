@@ -2,7 +2,9 @@ package com.cxy.aienglishspeakingpracticecompanion.service.impl;
 
 import com.cxy.aienglishspeakingpracticecompanion.app.FileAsrApp;
 import com.cxy.aienglishspeakingpracticecompanion.app.SpeakApp;
+import com.cxy.aienglishspeakingpracticecompanion.app.TtsApp;
 import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
+import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
 import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
@@ -21,8 +23,10 @@ public class SpeakServiceImpl implements SpeakService {
     private FileAsrApp fileAsrApp;
     @Resource
     private SpeakApp speakApp;
+    @Resource
+    private TtsApp ttsApp;
     @Override
-    public String speakWithAI(MultipartFile multipartFile,String sessionId) {
+    public VoiceChatResponse speakWithAI(MultipartFile multipartFile, String sessionId) {
         File localTempFile = null;
         try {
             // 1. 在服务器本地创建一个临时文件，避免文件名冲突 (比如：D:/temp/voice_xyz.wav)
@@ -49,9 +53,16 @@ public class SpeakServiceImpl implements SpeakService {
 
             // 4. 将识别出的文字喂给你的带多轮记忆的 LLM 大模型大脑
             String aiReplyText = speakApp.audioSpeak(userRecognizedText, sessionId);
+            if (aiReplyText == null || aiReplyText.trim().isEmpty()){
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI回复为空");
+            }
 
             // 5. TODO将AI回复转换成语音
-            return aiReplyText;
+            String speechUrl = ttsApp.textToSpeechUrl(aiReplyText);
+            if (speechUrl == null){
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR,"语音合成失败");
+            }
+            return new VoiceChatResponse(aiReplyText, speechUrl);
 
         } catch (Exception e) {
             log.error("对话系统全链路发生故障", e);

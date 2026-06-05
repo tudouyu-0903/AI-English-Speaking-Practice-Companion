@@ -2,6 +2,7 @@ package com.cxy.aienglishspeakingpracticecompanion.controller;
 
 import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
 import com.cxy.aienglishspeakingpracticecompanion.common.ResultUtils;
+import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
 import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
@@ -23,14 +24,14 @@ public class FileSpeakController {
      * 用户点击录制，录制结束后整体上传音频进行对话
      */
     @PostMapping("/file-chat")
-    public ResponseEntity<BaseResponse<String>> fileChat(
+    public ResponseEntity<BaseResponse<VoiceChatResponse>> fileChat(
             @RequestParam("audioFile") MultipartFile file,
             @RequestParam("sessionId") String sessionId) {
 
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"语音不能为空");
         }
-        String answear = speakService.speakWithAI(file, sessionId);
-        return ResponseEntity.ok(ResultUtils.success(answear));
+        VoiceChatResponse voiceChatResponse = speakService.speakWithAI(file, sessionId);
+        return ResponseEntity.ok(ResultUtils.success(voiceChatResponse));
     }
 }

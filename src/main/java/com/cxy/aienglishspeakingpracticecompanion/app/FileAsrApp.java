@@ -22,6 +22,8 @@ import java.net.URL;
 @Slf4j
 @Component
 /***
+ * 参考官方文档将语音转文字
+ * https://bailian.console.aliyun.com/cn-beijing?spm=5176.12818093_47.resourceCenter.1.3f3c16d08f1t6e&tab=doc#/doc/?type=model&url=2979031
  * 语音转文字
  */
 public class FileAsrApp {
