@@ -1,0 +1,570 @@
+:root {
+  color-scheme: dark;
+  --ink: #f7f1df;
+  --muted: #b7b09e;
+  --night: #111315;
+  --panel: #1b1e20;
+  --panel-strong: #24282b;
+  --line: rgba(247, 241, 223, 0.16);
+  --accent: #e7ff6f;
+  --accent-2: #73d8ff;
+  --warm: #ff9f6e;
+  --danger: #ff6e7a;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--night);
+  color: var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 72% 18%, rgba(115, 216, 255, 0.2), transparent 24rem),
+    radial-gradient(circle at 18% 78%, rgba(231, 255, 111, 0.15), transparent 22rem),
+    #111315;
+  background-size: 44px 44px, 44px 44px, auto, auto, auto;
+}
+
+.welcome-view {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.92fr) minmax(20rem, 1.08fr);
+  align-items: center;
+  min-height: 100vh;
+  padding: clamp(1.5rem, 4vw, 4rem);
+  overflow: hidden;
+}
+
+.welcome-copy {
+  z-index: 2;
+  max-width: 44rem;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: var(--accent);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.welcome-copy h1,
+.stage-header h1 {
+  margin: 0;
+  font-size: clamp(3rem, 8vw, 7.7rem);
+  line-height: 0.92;
+  letter-spacing: 0;
+  max-width: 12ch;
+}
+
+.intro {
+  max-width: 34rem;
+  margin: 1.5rem 0 2rem;
+  color: var(--muted);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-size: clamp(1rem, 2vw, 1.22rem);
+  line-height: 1.7;
+}
+
+.primary-action,
+.ghost-action,
+.back-button,
+.record-button,
+.scene-item {
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.primary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0.8rem 1.1rem 0.8rem 1.35rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #111315;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-weight: 800;
+}
+
+.primary-action strong {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #111315;
+  color: var(--accent);
+}
+
+.primary-action:hover,
+.record-button:hover,
+.scene-item:hover,
+.ghost-action:hover,
+.back-button:hover {
+  transform: translateY(-2px);
+}
+
+.signal-panel {
+  position: relative;
+  display: grid;
+  min-height: 34rem;
+  place-items: center;
+}
+
+.signal-ring {
+  position: absolute;
+  width: min(42vw, 34rem);
+  aspect-ratio: 1;
+  border: 1px solid rgba(247, 241, 223, 0.22);
+  border-radius: 50%;
+}
+
+.ring-one {
+  animation: slow-spin 18s linear infinite;
+  border-top-color: var(--accent);
+}
+
+.ring-two {
+  width: min(32vw, 25rem);
+  animation: slow-spin 12s linear infinite reverse;
+  border-right-color: var(--accent-2);
+}
+
+.signal-core {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: min(26vw, 18rem);
+  height: min(26vw, 18rem);
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(27, 30, 32, 0.76);
+  box-shadow: var(--shadow);
+}
+
+.signal-core span {
+  width: 0.7rem;
+  height: 5rem;
+  border-radius: 999px;
+  background: var(--ink);
+  animation: voice-bars 1s ease-in-out infinite;
+}
+
+.signal-core span:nth-child(2) {
+  animation-delay: 120ms;
+  background: var(--accent);
+}
+
+.signal-core span:nth-child(3) {
+  animation-delay: 240ms;
+  background: var(--accent-2);
+}
+
+.signal-core span:nth-child(4) {
+  animation-delay: 360ms;
+  background: var(--warm);
+}
+
+.signal-core span:nth-child(5) {
+  animation-delay: 480ms;
+}
+
+.welcome-strip {
+  position: absolute;
+  right: 0;
+  bottom: 2rem;
+  left: 0;
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+  color: rgba(247, 241, 223, 0.72);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-size: 0.82rem;
+}
+
+.welcome-strip span {
+  border-bottom: 1px solid var(--line);
+  padding: 0.35rem 0;
+}
+
+.training-view {
+  display: grid;
+  grid-template-columns: 20rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.scene-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  border-right: 1px solid var(--line);
+  background: rgba(17, 19, 21, 0.88);
+  padding: 1.25rem;
+}
+
+.back-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+}
+
+.scene-rail h2 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.scene-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.scene-item {
+  display: grid;
+  gap: 0.3rem;
+  min-height: 4.9rem;
+  padding: 0.9rem;
+  text-align: left;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--ink);
+}
+
+.scene-item.active {
+  border-color: var(--accent);
+  background: rgba(231, 255, 111, 0.1);
+}
+
+.scene-item span {
+  font-weight: 800;
+}
+
+.scene-item small,
+.mission,
+.session-chip,
+.error-text {
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+}
+
+.scene-item small {
+  color: var(--muted);
+}
+
+.mission {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.mission span {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ghost-action {
+  min-height: 2.85rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.conversation-stage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 100vh;
+}
+
+.stage-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1.2rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--line);
+}
+
+.stage-header h1 {
+  max-width: 17ch;
+  font-size: clamp(2rem, 4.5vw, 4.6rem);
+  line-height: 1;
+}
+
+.session-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.message-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.message {
+  display: flex;
+  gap: 0.85rem;
+  max-width: min(44rem, 92%);
+}
+
+.message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 2.5rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.bubble {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(36, 40, 43, 0.78);
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.message.user .bubble {
+  background: rgba(115, 216, 255, 0.12);
+}
+
+.bubble p {
+  margin: 0;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  line-height: 1.55;
+}
+
+.bubble audio {
+  display: block;
+  width: min(26rem, 100%);
+  margin-top: 0.9rem;
+}
+
+.thinking {
+  display: flex;
+  gap: 0.35rem;
+  min-width: 5rem;
+}
+
+.thinking span {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: blink 900ms infinite ease-in-out;
+}
+
+.thinking span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.thinking span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.recorder-dock {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  background: rgba(17, 19, 21, 0.88);
+  padding: 1rem clamp(1rem, 3vw, 2rem);
+}
+
+.wave-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 5rem;
+  overflow: hidden;
+}
+
+.wave-meter span {
+  width: 0.42rem;
+  border-radius: 999px;
+  background: rgba(247, 241, 223, 0.32);
+  transition: height 120ms ease, background 160ms ease;
+}
+
+.wave-meter.active span {
+  background: var(--accent);
+}
+
+.record-button {
+  width: 6.4rem;
+  height: 6.4rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #111315;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-weight: 900;
+}
+
+.record-button.recording {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 0 0 10px rgba(255, 110, 122, 0.12);
+}
+
+.record-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.error-text {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--danger);
+}
+
+@keyframes voice-bars {
+  0%,
+  100% {
+    transform: scaleY(0.42);
+  }
+  50% {
+    transform: scaleY(1.08);
+  }
+}
+
+@keyframes slow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+@media (max-width: 860px) {
+  .welcome-view {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 1rem;
+    padding-bottom: 5rem;
+  }
+
+  .signal-panel {
+    min-height: 18rem;
+    order: -1;
+  }
+
+  .signal-ring {
+    width: min(74vw, 24rem);
+  }
+
+  .ring-two {
+    width: min(56vw, 18rem);
+  }
+
+  .signal-core {
+    width: min(42vw, 12rem);
+    height: min(42vw, 12rem);
+  }
+
+  .training-view {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .scene-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .conversation-stage {
+    min-height: 72vh;
+  }
+}
+
+@media (max-width: 560px) {
+  .welcome-copy h1 {
+    font-size: 3.25rem;
+  }
+
+  .welcome-strip {
+    flex-wrap: wrap;
+    padding: 0 1rem;
+  }
+
+  .scene-list {
+    grid-template-columns: 1fr;
+  }
+
+  .stage-header {
+    flex-direction: column;
+  }
+
+  .session-chip {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .recorder-dock {
+    grid-template-columns: 1fr;
+  }
+
+  .record-button {
+    justify-self: center;
+    width: 5.7rem;
+    height: 5.7rem;
+  }
+}

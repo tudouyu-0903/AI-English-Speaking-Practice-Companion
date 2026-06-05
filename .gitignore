@@ -33,3 +33,7 @@ build/
 .vscode/
 
 application-local.yml
+
+### Frontend ###
+frontend/node_modules/
+frontend/dist/
