@@ -2,6 +2,7 @@ package com.cxy.aienglishspeakingpracticecompanion.controller;
 
 import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
 import com.cxy.aienglishspeakingpracticecompanion.common.ResultUtils;
+import com.cxy.aienglishspeakingpracticecompanion.dto.ConversationSummaryResponse;
 import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatRequest;
 import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
@@ -38,4 +39,15 @@ public class FileSpeakController {
         return ResponseEntity.ok(ResultUtils.success(voiceChatResponse));
     }
 
+    /**
+     * 获取会话摘要
+     */
+    @GetMapping("/summary")
+    public ResponseEntity<BaseResponse<ConversationSummaryResponse>> getSummary(@RequestParam String sessionId){
+        if(sessionId== null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"会话ID不能为空");
+        }
+        ConversationSummaryResponse conversationSummaryResponse = speakService.ConversationSummary(sessionId);
+        return ResponseEntity.ok(ResultUtils.success(conversationSummaryResponse));
+    }
 }

@@ -1,19 +1,25 @@
 package com.cxy.aienglishspeakingpracticecompanion.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONUtil;
+import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.cxy.aienglishspeakingpracticecompanion.app.FileAsrApp;
 import com.cxy.aienglishspeakingpracticecompanion.app.SpeakApp;
 import com.cxy.aienglishspeakingpracticecompanion.app.TtsApp;
 import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
+import com.cxy.aienglishspeakingpracticecompanion.dto.ConversationSummaryResponse;
 import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
 import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -90,5 +96,21 @@ public class SpeakServiceImpl implements SpeakService {
             }
         }
     }
+
+    /***
+     * 会话总结
+     * @param sessionId 会话ID
+     * @return 返回会话总结结果
+     */
+    @Override
+    public ConversationSummaryResponse ConversationSummary(String sessionId) {
+        String summariedSpeak = speakApp.summarySpeak(sessionId);
+        ConversationSummaryResponse response = JSONUtil.toBean(summariedSpeak, ConversationSummaryResponse.class);
+        if (response == null){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI总结结果格式错误");
+        }
+        return response;
+    }
+
 
 }
