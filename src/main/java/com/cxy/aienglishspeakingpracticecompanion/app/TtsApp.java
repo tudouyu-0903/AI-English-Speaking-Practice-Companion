@@ -9,6 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/***
+ * 接收大模型的文字，调用百炼，把生成的音频 URL 字符串直接返回。
+ * 官方文档连接https://bailian.console.aliyun.com/cn-beijing?spm=5176.12818093_47.resourceCenter.1.3f3c16d0OiyGbJ&tab=doc#/doc/?type=model&url=2879134
+ */
 @Slf4j
 @Component
 public class TtsApp {
@@ -32,10 +36,10 @@ public class TtsApp {
             MultiModalConversation conv = new MultiModalConversation();
             MultiModalConversationParam param = MultiModalConversationParam.builder()
                     .apiKey(apiKey)
-                    .model("qwen3-tts-flash") // 👈 选用高速文本转语音模型
+                    .model("qwen3-tts-flash")
                     .text(textText)
-                    .voice(AudioParameters.Voice.CHERRY) // 👈 Cherry 是百炼非常纯正甜美的英文女声
-                    .languageType("English") // 👈 严格指定发音语种为英文
+                    .voice(AudioParameters.Voice.CHERRY)
+                    .languageType("English") //指定发音语种为英文
                     .build();
 
             MultiModalConversationResult result = conv.call(param);
@@ -46,9 +50,7 @@ public class TtsApp {
 
             String audioUrl = result.getOutput().getAudio().getUrl();
             log.info("TTS 语音合成成功！阿里临时音频下载 URL: {}", audioUrl);
-            
             return audioUrl;
-
         } catch (Exception e) {
             log.error("TTS 语音合成发生链路阻断", e);
             throw new RuntimeException("TTS Synthesis Failed: " + e.getMessage());

@@ -41,10 +41,6 @@ public class RedisChatMemory implements ChatMemory {
         kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
     }
 
-    // ✅ 使用RedisTemplate，不需要Jedis
-//    public RedisChatMemory(RedisTemplate<String, byte[]> redisTemplate) {
-//        this.redisTemplate = redisTemplate;
-//    }
 
     /***
      * 添加对话
@@ -53,12 +49,9 @@ public class RedisChatMemory implements ChatMemory {
      */
     @Override
     public void add(String conversationId, List<Message> messages) {
-        // Codex 修改：打印记忆写入入口，确认 MessageChatMemoryAdvisor 是否真的调用了 RedisChatMemory。
         log.info("RedisChatMemory.add called, conversationId={}, incomingMessages={}", conversationId, messages.size());
         List<Message> conversationMessages = getOrCreateConversation(conversationId);
         conversationMessages.addAll(messages);
-
-
         // 限制对话历史长度
         if (conversationMessages.size() > maxHistory) {
             conversationMessages = conversationMessages.stream()
@@ -71,7 +64,6 @@ public class RedisChatMemory implements ChatMemory {
 
     @Override
     public List<Message> get(String conversationId, int lastN) {
-        // Codex 修改：打印记忆读取入口，确认本轮对话是否从 Redis 拉取历史消息。
         log.info("RedisChatMemory.get called, conversationId={}, lastN={}", conversationId, lastN);
         List<Message> allMessages = getOrCreateConversation(conversationId);
         return allMessages.stream()
@@ -85,7 +77,6 @@ public class RedisChatMemory implements ChatMemory {
         redisTemplate.delete(key);
     }
 
-    @SuppressWarnings("unchecked")
     private List<Message> getOrCreateConversation(String conversationId) {
         String key = getRedisKey(conversationId);
         byte[] data = redisTemplate.opsForValue().get(key);
@@ -110,10 +101,8 @@ public class RedisChatMemory implements ChatMemory {
             output.flush();
             byte[] data = baos.toByteArray();
             redisTemplate.opsForValue().set(key, data, ttl, TimeUnit.SECONDS);
-            // Codex 修改：打印最终 Redis key 和写入结果，方便和 Redis 客户端里查询的 key 对齐。
             log.info("RedisChatMemory saved, key={}, totalMessages={}, bytes={}, ttlSeconds={}", key, messages.size(), data.length, ttl);
         } catch (Exception e) {
-            // Codex 修改：不要吞掉 Redis 会话保存异常，否则 AI 成功但 Redis 没记录时很难排查。
             log.error("Redis 会话保存失败，key={}", key, e);
             throw new RuntimeException("Redis 会话保存失败，key=" + key, e);
         }
