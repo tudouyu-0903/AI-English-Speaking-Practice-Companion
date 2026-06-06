@@ -27,16 +27,15 @@ public class FileSpeakController {
         MultipartFile file = request.getAudioFile();
         String sessionId = request.getSessionId();
         String scene = request.getScene();
+        String customScenario = request.getCustomScenario();
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"语音不能为空");
         }
         if (sessionId == null || sessionId.trim().isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"会话ID不能为空");
         }
-        if (scene == null || scene.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"场景不能为空");
-        }
-        VoiceChatResponse voiceChatResponse = speakService.speakWithAI(file, sessionId, scene);
+        VoiceChatResponse voiceChatResponse = speakService.speakWithAI(file, sessionId, scene,customScenario);
         return ResponseEntity.ok(ResultUtils.success(voiceChatResponse));
     }
+
 }

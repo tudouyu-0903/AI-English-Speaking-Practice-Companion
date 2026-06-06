@@ -9,6 +9,8 @@ import com.alibaba.dashscope.audio.asr.transcription.TranscriptionResult;
 import com.cxy.aienglishspeakingpracticecompanion.advisor.MyLoggerAdvisor;
 import com.cxy.aienglishspeakingpracticecompanion.chatMemory.RedisChatMemory;
 import com.cxy.aienglishspeakingpracticecompanion.dto.ScenePromptFactory;
+import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
+import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -100,7 +102,31 @@ public class SpeakApp {
      * 不同场景下的会话
      */
     public String sceneSpeak(String userRecognizedText,String sessionId,String scene) {
+        if (scene == null || scene.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"场景不能为空");
+        }
         String scenePrompt = ScenePromptFactory.buildFinalPrompt(scene);
+        ChatResponse chatResponse = chatClient.prompt()
+                .user(userRecognizedText)
+                .system(scenePrompt)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .call()
+                .chatResponse();
+        String content = chatResponse.getResult().getOutput().getText();
+        log.info("content:{}", content);
+        return content;
+    }
+
+    /***
+     * 自定义场景下的会话
+     * @param userRecognizedText 对话上下文
+     * @param sessionId 会话id
+     * @param customScenario 自定义场景
+     * @return 回复结果
+     */
+    public String customSpeak(String userRecognizedText,String sessionId,String customScenario) {
+        String scenePrompt = ScenePromptFactory.buildCustomPrompt(customScenario);
         ChatResponse chatResponse = chatClient.prompt()
                 .user(userRecognizedText)
                 .system(scenePrompt)

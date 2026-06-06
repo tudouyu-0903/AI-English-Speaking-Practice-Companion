@@ -10,5 +10,5 @@ public interface SpeakService {
      * @param sessionId 会话ID
      * @return
      */
-    VoiceChatResponse speakWithAI(MultipartFile file, String sessionId,String scene);
+    VoiceChatResponse speakWithAI(MultipartFile file, String sessionId,String scene,String customScenario );
 }

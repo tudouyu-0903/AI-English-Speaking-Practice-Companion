@@ -18,6 +18,10 @@ public class VoiceChatRequest {
      */
     private String scene;
     /***
+     * 自定义场景描述
+     */
+    private String customScenario;
+    /***
      * 音频文件
      */
     private MultipartFile audioFile;

@@ -33,7 +33,7 @@ public class SpeakServiceImpl implements SpeakService {
      * @return
      */
     @Override
-    public VoiceChatResponse speakWithAI(MultipartFile multipartFile, String sessionId,String scene) {
+    public VoiceChatResponse speakWithAI(MultipartFile multipartFile, String sessionId,String scene,String customScenario ) {
         File localTempFile = null;
         try {
             // 1. 在服务器本地创建一个临时文件，避免文件名冲突 (比如：D:/temp/voice_xyz.wav)
@@ -59,7 +59,15 @@ public class SpeakServiceImpl implements SpeakService {
             }
 
             // 4. 将识别出的文字喂给你的带多轮记忆的大模型
-            String aiReplyText = speakApp.sceneSpeak(userRecognizedText,sessionId, scene);
+            //判断场景是自定义的还是选择 场景
+            String aiReplyText ;
+            if (customScenario == null || customScenario.isBlank()){
+                //系统预设场景
+                aiReplyText = speakApp.sceneSpeak(userRecognizedText,sessionId, scene);
+            }else {
+                //自定义场景
+                aiReplyText =  speakApp.customSpeak(userRecognizedText,sessionId,customScenario) ;
+            }
             if (aiReplyText == null || aiReplyText.trim().isEmpty()){
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI回复为空");
             }
