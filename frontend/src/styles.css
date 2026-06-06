@@ -89,10 +89,18 @@ button {
 .ghost-action,
 .back-button,
 .record-button,
-.scene-item {
+.scene-item,
+.custom-scene-box textarea {
   border: 1px solid var(--line);
-  cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.primary-action,
+.ghost-action,
+.back-button,
+.record-button,
+.scene-item {
+  cursor: pointer;
 }
 
 .primary-action {
@@ -288,6 +296,44 @@ button {
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.custom-scene-box {
+  display: grid;
+  gap: 0.55rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+}
+
+.custom-scene-box span {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.custom-scene-box textarea {
+  width: 100%;
+  min-height: 9rem;
+  resize: vertical;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+  padding: 0.85rem;
+  outline: none;
+}
+
+.custom-scene-box textarea:focus {
+  border-color: var(--accent-2);
+  background: rgba(115, 216, 255, 0.08);
+}
+
+.custom-scene-box small {
+  color: var(--muted);
+  font-size: 0.76rem;
 }
 
 .ghost-action {
