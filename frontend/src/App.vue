@@ -2,39 +2,48 @@
 import axios from 'axios'
 import { computed, nextTick, ref } from 'vue'
 
-const scenes = [
+const presetScenes = [
   {
-    id: 'cafe',
-    name: 'Cafe Check-in',
-    place: 'London morning cafe',
-    goal: 'Order a drink, ask about the menu, and keep small talk going.',
-    opening: 'You walk into a busy cafe before work. Start by greeting the barista.'
+    id: 'order_food',
+    name: 'Diner Order',
+    place: 'Star Bites diner',
+    goal: 'Order drinks, choose food, ask for details, and keep the exchange natural.',
+    opening: 'The waiter greets you at a busy American diner and asks what you would like to drink.'
   },
   {
-    id: 'airport',
-    name: 'Airport Help Desk',
-    place: 'International airport',
-    goal: 'Ask for help, clarify directions, and respond politely under pressure.',
-    opening: 'Your flight gate changed. Ask the staff what you should do next.'
+    id: 'check_in',
+    name: 'Airport Check-in',
+    place: 'Global Airways counter',
+    goal: 'Share booking details, talk about baggage, and answer check-in questions politely.',
+    opening: 'The ground crew agent asks for your passport and booking details.'
   },
   {
     id: 'interview',
-    name: 'First Interview',
-    place: 'Remote job interview',
-    goal: 'Introduce yourself, describe experience, and answer follow-up questions.',
-    opening: 'The interviewer asks you to briefly tell them about yourself.'
+    name: 'Tech Interview',
+    place: 'TechGen hiring room',
+    goal: 'Introduce yourself, explain experience, and answer one interview question at a time.',
+    opening: 'The HR manager introduces the interview and asks the first question.'
   },
   {
-    id: 'neighbor',
-    name: 'New Neighbor',
-    place: 'Apartment hallway',
-    goal: 'Make a friendly introduction and arrange a casual future chat.',
-    opening: 'You meet a neighbor for the first time while checking your mail.'
+    id: 'meeting',
+    name: 'Launch Meeting',
+    place: 'Mobile app launch sync',
+    goal: 'Give a short progress update, discuss roadblocks, and agree on next steps.',
+    opening: 'The project manager welcomes you and asks for a quick task status update.'
   }
 ]
 
+const customSceneTemplate = {
+  id: 'custom',
+  name: 'Custom Scene',
+  place: 'Your own roleplay',
+  goal: 'Describe the role, situation, and speaking challenge you want to practice.',
+  opening: 'Create a roleplay prompt below, then record your first message.'
+}
+
 const view = ref('welcome')
-const activeSceneId = ref('cafe')
+const activeSceneId = ref('order_food')
+const customScenario = ref('An IELTS examiner testing my speaking skills with follow-up questions about daily life.')
 const messages = ref([
   {
     role: 'ai',
@@ -53,8 +62,18 @@ const streamRef = ref(null)
 const meterTimer = ref(null)
 const threadEl = ref(null)
 
-const activeScene = computed(() => scenes.find((scene) => scene.id === activeSceneId.value) || scenes[0])
-const canRecord = computed(() => !isSending.value)
+const scenes = computed(() => [...presetScenes, customSceneTemplate])
+const isCustomScene = computed(() => activeSceneId.value === 'custom')
+const activeScene = computed(() => {
+  if (isCustomScene.value) {
+    return {
+      ...customSceneTemplate,
+      opening: customScenario.value.trim() || customSceneTemplate.opening
+    }
+  }
+  return presetScenes.find((scene) => scene.id === activeSceneId.value) || presetScenes[0]
+})
+const canRecord = computed(() => !isSending.value && (!isCustomScene.value || customScenario.value.trim().length > 0))
 
 function getOrCreateSessionId() {
   const saved = localStorage.getItem('english_voice_session_id')
@@ -69,6 +88,11 @@ function enterTraining() {
   nextTick(scrollToBottom)
 }
 
+function selectScene(sceneId) {
+  activeSceneId.value = sceneId
+  errorMessage.value = ''
+}
+
 function resetConversation() {
   sessionId.value = `session-${crypto.randomUUID()}`
   localStorage.setItem('english_voice_session_id', sessionId.value)
@@ -80,10 +104,14 @@ function resetConversation() {
     }
   ]
   errorMessage.value = ''
+  nextTick(scrollToBottom)
 }
 
 async function toggleRecording() {
-  if (!canRecord.value) return
+  if (!canRecord.value) {
+    errorMessage.value = 'Please write a custom scene before recording.'
+    return
+  }
   if (isRecording.value) {
     stopRecording()
     return
@@ -116,7 +144,7 @@ async function startRecording() {
     isRecording.value = true
     startMeter()
   } catch (error) {
-    errorMessage.value = '无法访问麦克风，请检查浏览器权限后再试。'
+    errorMessage.value = 'Unable to access the microphone. Please check browser permissions and try again.'
   }
 }
 
@@ -143,6 +171,12 @@ async function sendRecording(mimeType) {
   formData.append('audioFile', blob, `voice-${Date.now()}.${extension}`)
   formData.append('sessionId', sessionId.value)
 
+  if (isCustomScene.value) {
+    formData.append('customScenario', customScenario.value.trim())
+  } else {
+    formData.append('scene', activeSceneId.value)
+  }
+
   messages.value.push({
     role: 'user',
     text: `Voice message sent in ${activeScene.value.name}`,
@@ -165,7 +199,7 @@ async function sendRecording(mimeType) {
       audioUrl: response.data.data?.aiAudioUrl || ''
     })
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || error.message || '发送失败，请稍后重试。'
+    errorMessage.value = error.response?.data?.message || error.message || 'Send failed. Please try again.'
   } finally {
     isSending.value = false
     audioChunks.value = []
@@ -212,24 +246,24 @@ function scrollToBottom() {
         <p class="eyebrow">AI English Speaking Companion</p>
         <h1>Speak first. Think in English next.</h1>
         <p class="intro">
-          Pick a real-life scene, record your voice, and let the AI answer like a patient English partner.
+          Pick a real-life scene or design your own roleplay, record your voice, and let the AI answer like a patient English partner.
         </p>
         <button class="primary-action" type="button" @click="enterTraining">
           <span>Enter conversation</span>
-          <strong>↗</strong>
+          <strong>-&gt;</strong>
         </button>
       </div>
 
       <div class="welcome-strip">
-        <span>Scenario practice</span>
-        <span>Voice upload</span>
+        <span>Preset prompts</span>
+        <span>Custom scenarios</span>
         <span>AI text + audio reply</span>
       </div>
     </section>
 
     <section v-else class="training-view">
       <aside class="scene-rail">
-        <button class="back-button" type="button" @click="view = 'welcome'">←</button>
+        <button class="back-button" type="button" aria-label="Back to welcome" @click="view = 'welcome'">&lt;-</button>
         <div>
           <p class="eyebrow">Training Scene</p>
           <h2>{{ activeScene.name }}</h2>
@@ -242,12 +276,23 @@ function scrollToBottom() {
             class="scene-item"
             :class="{ active: scene.id === activeSceneId }"
             type="button"
-            @click="activeSceneId = scene.id"
+            @click="selectScene(scene.id)"
           >
             <span>{{ scene.name }}</span>
             <small>{{ scene.place }}</small>
           </button>
         </div>
+
+        <label v-if="isCustomScene" class="custom-scene-box">
+          <span>Custom prompt</span>
+          <textarea
+            v-model="customScenario"
+            rows="7"
+            maxlength="500"
+            placeholder="Example: A hotel receptionist helping me change a booking after my flight was delayed."
+          ></textarea>
+          <small>{{ customScenario.trim().length }}/500 characters</small>
+        </label>
 
         <div class="mission">
           <span>Goal</span>
@@ -301,7 +346,7 @@ function scrollToBottom() {
             class="record-button"
             :class="{ recording: isRecording }"
             type="button"
-            :disabled="!canRecord"
+            :disabled="isSending"
             @click="toggleRecording"
           >
             <span>{{ isRecording ? 'Stop' : isSending ? 'Sending' : 'Record' }}</span>
