@@ -2,16 +2,14 @@ package com.cxy.aienglishspeakingpracticecompanion.controller;
 
 import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
 import com.cxy.aienglishspeakingpracticecompanion.common.ResultUtils;
+import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatRequest;
 import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
 import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
 import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -25,13 +23,20 @@ public class FileSpeakController {
      */
     @PostMapping("/file-chat")
     public ResponseEntity<BaseResponse<VoiceChatResponse>> fileChat(
-            @RequestParam("audioFile") MultipartFile file,
-            @RequestParam("sessionId") String sessionId) {
-
+            @ModelAttribute VoiceChatRequest  request) {
+        MultipartFile file = request.getAudioFile();
+        String sessionId = request.getSessionId();
+        String scene = request.getScene();
         if (file.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"语音不能为空");
         }
-        VoiceChatResponse voiceChatResponse = speakService.speakWithAI(file, sessionId);
+        if (sessionId == null || sessionId.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"会话ID不能为空");
+        }
+        if (scene == null || scene.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"场景不能为空");
+        }
+        VoiceChatResponse voiceChatResponse = speakService.speakWithAI(file, sessionId, scene);
         return ResponseEntity.ok(ResultUtils.success(voiceChatResponse));
     }
 }

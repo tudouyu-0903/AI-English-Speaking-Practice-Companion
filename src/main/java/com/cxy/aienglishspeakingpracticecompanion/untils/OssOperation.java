@@ -4,6 +4,8 @@ import com.aliyun.oss.*;
 import com.aliyun.oss.common.auth.*;
 import com.aliyun.oss.common.comm.SignVersion;
 import com.aliyun.oss.model.PutObjectRequest;
+import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
+import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -33,7 +35,7 @@ public class OssOperation {
     private String bucketName;
 
     @Value("${aliyun.oss.region}")
-    private String region; // 例如: cn-hangzhou 或 cn-beijing
+    private String region;
 
     /**
      * 核心业务方法：接收前端录音文件，上传到自己的 OSS，并返回百炼 ASR 认识的 HTTPS 临时链接
@@ -43,11 +45,11 @@ public class OssOperation {
             throw new RuntimeException("前端上传的音频文件为空");
         }
 
-        // 1. 严格对齐官方示例：配置 V4 签名
+        // 1.配置 V4 签名
         ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
         clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
 
-        // 2. 严格对齐官方示例：配置凭证提供者（这里为了方便 Spring 管理，使用静态凭证包装）
+        // 2配置凭证提供者（这里为了方便 Spring 管理，使用静态凭证包装）
         CredentialsProvider credentialsProvider = new DefaultCredentialProvider(accessKeyId, accessKeySecret);
 
         // 3. 构建安全的实例
@@ -71,7 +73,7 @@ public class OssOperation {
             localTempFile = new File(systemTempDir, "voice_" + UUID.randomUUID() + suffix);
             multipartFile.transferTo(localTempFile);
 
-            // 6. 生成云端对象完整路径（例如：english_voices/202606/unique_id.m4a）
+            // 6. 生成云端对象完整路径
             String objectName = "english_voices/" + UUID.randomUUID() + suffix;
             log.info("本地物理文件已就绪，正在通过自建 V4 签名协议上传至 OSS... 路径: {}", objectName);
 
@@ -80,8 +82,7 @@ public class OssOperation {
             ossClient.putObject(putObjectRequest);
             log.info("🔥 OSS 物理块上传大获成功！");
 
-            // 8. 🔓【核心破局】：为非实时文件转写模型生成带有 V4 签名加密的 HTTPS 临时下载 URL
-            // 设置 10 分钟过期，足够百炼模型顺着链接把音频抓取过去
+            // 8.为非实时文件转写模型生成带有 V4 签名加密的 HTTPS 临时下载 URL
             Date expiration = new Date(System.currentTimeMillis() + 10 * 60 * 1000);
             URL signedUrl = ossClient.generatePresignedUrl(bucketName, objectName, expiration);
 
@@ -99,7 +100,7 @@ public class OssOperation {
             log.error("文件落地或处理链路阻断", e);
             throw new RuntimeException("System IO Error: " + e.getMessage());
         } finally {
-            // 9. 🧹 善后清理：关闭客户端并立刻粉碎服务器本地临时文件，绝不白白占用系统空间
+            // 9.关闭客户端并立刻粉碎服务器本地临时文件，绝不白白占用系统空间
             if (ossClient != null) {
                 ossClient.shutdown();
             }
@@ -137,7 +138,7 @@ public class OssOperation {
 
             log.info("正在通过自建 V4 签名协议将 File 上传至 OSS... 路径: {}", objectName);
 
-            // 3. 严格遵循官方示例构建 Request 并上传
+            // 3. 构建 Request 并上传
             PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, objectName, localFile);
             ossClient.putObject(putObjectRequest);
 
@@ -149,7 +150,7 @@ public class OssOperation {
 
         } catch (Exception e) {
             log.error("OSS 交互失败", e);
-            throw new RuntimeException("OSS Error: " + e.getMessage());
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"OSS Error: " + e.getMessage());
         } finally {
             if (ossClient != null) {
                 ossClient.shutdown();

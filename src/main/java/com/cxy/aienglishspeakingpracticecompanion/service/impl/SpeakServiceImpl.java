@@ -25,13 +25,20 @@ public class SpeakServiceImpl implements SpeakService {
     private SpeakApp speakApp;
     @Resource
     private TtsApp ttsApp;
+
+    /***
+     * 语音对话
+     * @param multipartFile 用户的录音文件
+     * @param sessionId 会话ID
+     * @return
+     */
     @Override
-    public VoiceChatResponse speakWithAI(MultipartFile multipartFile, String sessionId) {
+    public VoiceChatResponse speakWithAI(MultipartFile multipartFile, String sessionId,String scene) {
         File localTempFile = null;
         try {
             // 1. 在服务器本地创建一个临时文件，避免文件名冲突 (比如：D:/temp/voice_xyz.wav)
             String systemTempDir = System.getProperty("java.io.tmpdir");
-            // Codex 修改：保留前端上传音频的真实后缀，避免文件内容是 webm/m4a/mp3 却被保存成 wav。
+            //保留前端上传音频的真实后缀，避免文件内容是 webm/m4a/mp3 却被保存成 wav。
             String originalFilename = multipartFile.getOriginalFilename();
             String suffix = (originalFilename != null && originalFilename.contains("."))
                     ? originalFilename.substring(originalFilename.lastIndexOf("."))
@@ -51,13 +58,13 @@ public class SpeakServiceImpl implements SpeakService {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "识别结果为空");
             }
 
-            // 4. 将识别出的文字喂给你的带多轮记忆的 LLM 大模型大脑
-            String aiReplyText = speakApp.audioSpeak(userRecognizedText, sessionId);
+            // 4. 将识别出的文字喂给你的带多轮记忆的大模型
+            String aiReplyText = speakApp.sceneSpeak(userRecognizedText,sessionId, scene);
             if (aiReplyText == null || aiReplyText.trim().isEmpty()){
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI回复为空");
             }
 
-            // 5. TODO将AI回复转换成语音
+            // 5. 将AI回复转换成语音
             String speechUrl = ttsApp.textToSpeechUrl(aiReplyText);
             if (speechUrl == null){
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR,"语音合成失败");
@@ -68,7 +75,7 @@ public class SpeakServiceImpl implements SpeakService {
             log.error("对话系统全链路发生故障", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"系统内部错误: " + e.getMessage());
         } finally {
-            // 6. ⚡ 极其重要：不论成功还是失败，必须删除本地服务器的临时文件，防止撑爆磁盘空间
+            // 释放本地服务器的临时文件
             if (localTempFile != null && localTempFile.exists()) {
                 boolean deleted = localTempFile.delete();
                 log.info("临时音频文件清理状态: {}", deleted);
