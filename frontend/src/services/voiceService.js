@@ -46,6 +46,19 @@ export async function fetchConversationSummary(sessionId) {
   return normalizeSummary(response.data.data)
 }
 
+export async function fetchSceneOpening({ sessionId, sceneId, customScenario }) {
+  const response = await axios.post('/api/voice/scene-opening', {
+    sessionId,
+    scene: customScenario?.trim() ? '' : sceneId,
+    customScenario: customScenario?.trim() || ''
+  }, {
+    headers: getAuthorizedHeaders()
+  })
+
+  assertSuccess(response.data, 'Scene opening failed')
+  return response.data.data
+}
+
 function getAuthorizedHeaders(headers = {}) {
   const token = getAuthToken()
   return token ? { ...headers, Authorization: `Bearer ${token}` } : headers
