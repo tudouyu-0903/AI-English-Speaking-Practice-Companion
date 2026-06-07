@@ -34,13 +34,13 @@ AI 英语口语练习伙伴是一个基于场景的英语口语训练应用。�
 
 ## 功能预览
 
-截图、演示视频和流程图都放在 `image` 目录。当前 README 使用下面这些文件作为展示素材。
+截图和流程图都放在 `image` 目录。演示视频已发布到 B 站，当前 README 使用下面这些素材进行展示。
 
 ### 演示视频
 
-<video src="image/视频讲解.mp4" controls width="100%"></video>
+[点击观看 B 站演示视频](https://www.bilibili.com/video/BV1yTEh6CEYj/)
 
-如果当前 Markdown 查看器不支持内嵌视频，可以直接打开 [视频讲解.mp4](image/视频讲解.mp4)。
+如果需要在 README 中展示封面图，可以将视频封面保存为 `image/demo-cover.jpg`，再使用图片链接跳转到上面的 B 站视频。
 
 ### 登录与注册
 
