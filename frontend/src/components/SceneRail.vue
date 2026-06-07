@@ -35,15 +35,26 @@ defineProps({
   scenes: {
     type: Array,
     required: true
+  },
+  user: {
+    type: Object,
+    default: null
   }
 })
 
-defineEmits(['back', 'generate-summary', 'reset-conversation', 'select-scene', 'update:customScenario'])
+defineEmits(['back', 'generate-summary', 'logout', 'reset-conversation', 'select-scene', 'update:customScenario'])
 </script>
 
 <template>
   <aside class="scene-rail">
     <button class="back-button" type="button" aria-label="Back to welcome" @click="$emit('back')">&lt;-</button>
+    <div class="rail-user">
+      <div>
+        <span>Signed in</span>
+        <strong>{{ user?.username || user?.userAccount || 'Learner' }}</strong>
+      </div>
+      <button type="button" @click="$emit('logout')">Logout</button>
+    </div>
     <div>
       <p class="eyebrow">Training Scene</p>
       <h2>{{ activeScene.name }}</h2>

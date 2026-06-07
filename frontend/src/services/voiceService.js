@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getAuthToken } from './authService'
 
 const SESSION_STORAGE_KEY = 'english_voice_session_id'
 
@@ -28,7 +29,7 @@ export async function sendVoiceMessage({ audioBlob, mimeType, sessionId, sceneId
   }
 
   const response = await axios.post('/api/voice/file-chat', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: getAuthorizedHeaders({ 'Content-Type': 'multipart/form-data' })
   })
 
   assertSuccess(response.data, 'AI response failed')
@@ -37,11 +38,17 @@ export async function sendVoiceMessage({ audioBlob, mimeType, sessionId, sceneId
 
 export async function fetchConversationSummary(sessionId) {
   const response = await axios.get('/api/voice/summary', {
-    params: { sessionId }
+    params: { sessionId },
+    headers: getAuthorizedHeaders()
   })
 
   assertSuccess(response.data, 'Summary failed')
   return normalizeSummary(response.data.data)
+}
+
+function getAuthorizedHeaders(headers = {}) {
+  const token = getAuthToken()
+  return token ? { ...headers, Authorization: `Bearer ${token}` } : headers
 }
 
 function assertSuccess(payload, fallbackMessage) {

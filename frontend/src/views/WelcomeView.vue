@@ -1,5 +1,12 @@
 <script setup>
-defineEmits(['enter-training'])
+defineProps({
+  user: {
+    type: Object,
+    default: null
+  }
+})
+
+defineEmits(['enter-training', 'logout'])
 </script>
 
 <template>
@@ -17,6 +24,10 @@ defineEmits(['enter-training'])
     </div>
 
     <div class="welcome-copy">
+      <div class="user-strip">
+        <span>{{ user?.username || user?.userAccount || 'Learner' }}</span>
+        <button type="button" @click="$emit('logout')">Logout</button>
+      </div>
       <p class="eyebrow">AI English Speaking Companion</p>
       <h1>Speak first. Think in English next.</h1>
       <p class="intro">
