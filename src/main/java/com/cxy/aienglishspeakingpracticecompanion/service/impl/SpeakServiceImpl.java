@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.cxy.aienglishspeakingpracticecompanion.app.FileAsrApp;
 import com.cxy.aienglishspeakingpracticecompanion.app.SpeakApp;
 import com.cxy.aienglishspeakingpracticecompanion.app.TtsApp;
+import com.cxy.aienglishspeakingpracticecompanion.chatMemory.RedisChatMemory;
 import com.cxy.aienglishspeakingpracticecompanion.model.dto.ConversationSummaryResponse;
 import com.cxy.aienglishspeakingpracticecompanion.model.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
@@ -11,10 +12,14 @@ import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -25,6 +30,11 @@ public class SpeakServiceImpl implements SpeakService {
     private SpeakApp speakApp;
     @Resource
     private TtsApp ttsApp;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+    private static final long SCENE_EXPIRE_SECONDS = 30 * 24 * 60 * 60;
+    @Resource
+    private RedisChatMemory redisChatMemory;
 
     /***
      * 语音对话
@@ -115,25 +125,46 @@ public class SpeakServiceImpl implements SpeakService {
      */
     @Override
     public VoiceChatResponse sceneOpening(String sessionId, String scene, String customScenario) {
-        String aiReplyText;
-        //1. 判断场景是自定义的还是选择场景
+        //预设场景
         if (customScenario == null || customScenario.isBlank()) {
-            //获取场景开场白
-            aiReplyText = speakApp.sceneOpening(sessionId, scene);
-        } else {
-            aiReplyText = speakApp.customSceneOpening(sessionId, customScenario);
+            String cacheKey = "scene:opening:" + scene;
+            //查询缓存是否已经生成对应场景
+            String cachedResult = stringRedisTemplate.opsForValue().get(cacheKey);
+            //存在
+            if (cachedResult != null && !cachedResult.isBlank()) {
+                VoiceChatResponse cached = JSONUtil.toBean(cachedResult, VoiceChatResponse.class);
+                if (cached != null) {
+                    saveOpeningToMemory(sessionId, cached.getAiText());
+                    return cached;
+                }
+            }
+            //不存在
+            //AI生成回答
+            String aiText = speakApp.sceneOpening(sessionId, scene);
+            String audioUrl = ttsApp.textToSpeechUrl(aiText);
+            //返回响应
+            VoiceChatResponse response = new VoiceChatResponse(aiText, audioUrl);
+            //存入缓存
+            stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(response),SCENE_EXPIRE_SECONDS,TimeUnit.SECONDS);
+            return response;
         }
 
-        if (aiReplyText == null || aiReplyText.isBlank()) {
+        // 自定义场景不缓存，或者按 prompt hash 缓存
+        String aiText = speakApp.customSceneOpening(sessionId, customScenario);
+        String audioUrl = ttsApp.textToSpeechUrl(aiText);
+        return new VoiceChatResponse(aiText, audioUrl);
+    }
+    private void saveOpeningToMemory(String sessionId, String aiText) {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "会话ID不能为空");
+        }
+        if (aiText == null || aiText.isBlank()) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI开场白为空");
         }
-        //2. 将AI开场白转换成语音
-        String speechUrl = ttsApp.textToSpeechUrl(aiReplyText);
-        if (speechUrl == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "语音合成失败");
-        }
 
-        return new VoiceChatResponse(aiReplyText, speechUrl);
+        redisChatMemory.add(sessionId, List.of(
+                new AssistantMessage(aiText)
+        ));
     }
 
 
