@@ -9,6 +9,7 @@ import com.cxy.aienglishspeakingpracticecompanion.model.dto.ConversationSummaryR
 import com.cxy.aienglishspeakingpracticecompanion.model.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
 import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
+import com.cxy.aienglishspeakingpracticecompanion.model.dto.VoiceTranscribeResponse;
 import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -37,13 +38,13 @@ public class SpeakServiceImpl implements SpeakService {
     private RedisChatMemory redisChatMemory;
 
     /***
-     * 语音对话
-     * @param multipartFile 用户的录音文件
-     * @param sessionId 会话ID
+     * 用户语音转文字
+     * @param multipartFile
+     * @param sessionId
      * @return
      */
     @Override
-    public VoiceChatResponse speakWithAI(MultipartFile multipartFile, String sessionId,String scene,String customScenario ) {
+    public VoiceTranscribeResponse transcribeVoice(MultipartFile multipartFile, String sessionId) {
         File localTempFile = null;
         try {
             // 1. 在服务器本地创建一个临时文件，避免文件名冲突 (比如：D:/temp/voice_xyz.wav)
@@ -68,37 +69,49 @@ public class SpeakServiceImpl implements SpeakService {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "识别结果为空");
             }
 
-            // 4. 将识别出的文字喂给你的带多轮记忆的大模型
-            //判断场景是自定义的还是选择 场景
-            String aiReplyText ;
-            if (customScenario == null || customScenario.isBlank()){
-                //系统预设场景
-                aiReplyText = speakApp.sceneSpeak(userRecognizedText,sessionId, scene);
-            }else {
-                //自定义场景
-                aiReplyText =  speakApp.customSpeak(userRecognizedText,sessionId,customScenario) ;
-            }
-            if (aiReplyText == null || aiReplyText.trim().isEmpty()){
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI回复为空");
-            }
-
-            // 5. 将AI回复转换成语音
-            String speechUrl = ttsApp.textToSpeechUrl(aiReplyText);
-            if (speechUrl == null){
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR,"语音合成失败");
-            }
-            return new VoiceChatResponse(aiReplyText, speechUrl);
-
-        } catch (Exception e) {
-            log.error("对话系统全链路发生故障", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"系统内部错误: " + e.getMessage());
+            VoiceTranscribeResponse response = new VoiceTranscribeResponse();
+            response.setUserText(userRecognizedText);
+            response.setAsrTaskId("asr-" + UUID.randomUUID());
+            return response;
+        }catch (Exception e){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "语音识别失败: " + e.getMessage());
         } finally {
-            // 释放本地服务器的临时文件
             if (localTempFile != null && localTempFile.exists()) {
-                boolean deleted = localTempFile.delete();
-                log.info("临时音频文件清理状态: {}", deleted);
+                localTempFile.delete();
             }
         }
+    }
+
+    /***
+     * 将用户确认后的回答交给AI
+     * @param userText
+     * @param sessionId
+     * @param scene
+     * @param customScenario
+     * @return
+     */
+    @Override
+    public VoiceChatResponse chatWithConfirmedText(String userText, String sessionId, String scene, String customScenario) {
+        // 将识别出的文字喂给你的带多轮记忆的大模型
+        //判断场景是自定义的还是选择 场景
+        String aiReplyText ;
+        if (customScenario == null || customScenario.isBlank()){
+            //系统预设场景
+            aiReplyText = speakApp.sceneSpeak(userText,sessionId, scene);
+        }else {
+            //自定义场景
+            aiReplyText =  speakApp.customSpeak(userText,sessionId,customScenario) ;
+        }
+        if (aiReplyText == null || aiReplyText.trim().isEmpty()){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"AI回复为空");
+        }
+
+        // 5. 将AI回复转换成语音
+        String speechUrl = ttsApp.textToSpeechUrl(aiReplyText);
+        if (speechUrl == null){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"语音合成失败");
+        }
+        return new VoiceChatResponse(aiReplyText, speechUrl);
     }
 
     /***
