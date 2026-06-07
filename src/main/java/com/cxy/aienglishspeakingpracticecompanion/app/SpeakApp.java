@@ -3,7 +3,7 @@ package com.cxy.aienglishspeakingpracticecompanion.app;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.cxy.aienglishspeakingpracticecompanion.advisor.MyLoggerAdvisor;
 import com.cxy.aienglishspeakingpracticecompanion.chatMemory.RedisChatMemory;
-import com.cxy.aienglishspeakingpracticecompanion.dto.ScenePromptFactory;
+import com.cxy.aienglishspeakingpracticecompanion.model.dto.ScenePromptFactory;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
 import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import lombok.extern.slf4j.Slf4j;

@@ -1,10 +1,11 @@
 package com.cxy.aienglishspeakingpracticecompanion.controller;
 
+import com.cxy.aienglishspeakingpracticecompanion.aop.AuthCheck;
 import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
 import com.cxy.aienglishspeakingpracticecompanion.common.ResultUtils;
-import com.cxy.aienglishspeakingpracticecompanion.dto.ConversationSummaryResponse;
-import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatRequest;
-import com.cxy.aienglishspeakingpracticecompanion.dto.VoiceChatResponse;
+import com.cxy.aienglishspeakingpracticecompanion.model.dto.ConversationSummaryResponse;
+import com.cxy.aienglishspeakingpracticecompanion.model.dto.VoiceChatRequest;
+import com.cxy.aienglishspeakingpracticecompanion.model.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
 import com.cxy.aienglishspeakingpracticecompanion.excption.ErrorCode;
 import com.cxy.aienglishspeakingpracticecompanion.service.SpeakService;
@@ -23,6 +24,7 @@ public class FileSpeakController {
      * 用户点击录制，录制结束后整体上传音频进行对话
      */
     @PostMapping("/file-chat")
+    @AuthCheck
     public ResponseEntity<BaseResponse<VoiceChatResponse>> fileChat(
             @ModelAttribute VoiceChatRequest  request) {
         MultipartFile file = request.getAudioFile();
@@ -42,6 +44,7 @@ public class FileSpeakController {
     /**
      * 获取会话摘要
      */
+    @AuthCheck
     @GetMapping("/summary")
     public ResponseEntity<BaseResponse<ConversationSummaryResponse>> getSummary(@RequestParam String sessionId){
         if(sessionId== null){

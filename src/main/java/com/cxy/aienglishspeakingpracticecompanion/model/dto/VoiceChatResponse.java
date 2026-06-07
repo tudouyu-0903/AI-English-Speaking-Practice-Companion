@@ -1,4 +1,4 @@
-package com.cxy.aienglishspeakingpracticecompanion.dto;
+package com.cxy.aienglishspeakingpracticecompanion.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
