@@ -11,7 +11,14 @@ import {
   sendVoiceMessage
 } from '../services/voiceService'
 
-defineEmits(['back'])
+const props = defineProps({
+  user: {
+    type: Object,
+    default: null
+  }
+})
+
+defineEmits(['back', 'logout'])
 
 const activeSceneId = ref('order_food')
 const customScenario = ref('An IELTS examiner testing my speaking skills with follow-up questions about daily life.')
@@ -220,8 +227,10 @@ function stopMeter() {
       :is-sending="isSending"
       :is-summarizing="isSummarizing"
       :scenes="scenes"
+      :user="props.user"
       @back="$emit('back')"
       @generate-summary="generateSummary"
+      @logout="$emit('logout')"
       @reset-conversation="resetConversation"
       @select-scene="selectScene"
     />
