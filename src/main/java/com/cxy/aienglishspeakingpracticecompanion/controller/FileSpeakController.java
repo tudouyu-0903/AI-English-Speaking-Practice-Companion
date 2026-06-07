@@ -4,6 +4,7 @@ import com.cxy.aienglishspeakingpracticecompanion.aop.AuthCheck;
 import com.cxy.aienglishspeakingpracticecompanion.common.BaseResponse;
 import com.cxy.aienglishspeakingpracticecompanion.common.ResultUtils;
 import com.cxy.aienglishspeakingpracticecompanion.model.dto.ConversationSummaryResponse;
+import com.cxy.aienglishspeakingpracticecompanion.model.dto.SceneOpeningRequest;
 import com.cxy.aienglishspeakingpracticecompanion.model.dto.VoiceChatRequest;
 import com.cxy.aienglishspeakingpracticecompanion.model.dto.VoiceChatResponse;
 import com.cxy.aienglishspeakingpracticecompanion.excption.BusinessException;
@@ -52,5 +53,27 @@ public class FileSpeakController {
         }
         ConversationSummaryResponse conversationSummaryResponse = speakService.ConversationSummary(sessionId);
         return ResponseEntity.ok(ResultUtils.success(conversationSummaryResponse));
+    }
+
+    /***
+     * 获取场景开场
+     * @param request
+     * @return
+     */
+    @PostMapping("/scene-opening")
+    @AuthCheck
+    public ResponseEntity<BaseResponse<VoiceChatResponse>> sceneOpening(
+            @RequestBody SceneOpeningRequest request) {
+        if (request.getSessionId() == null || request.getSessionId().isBlank()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "会话ID不能为空");
+        }
+
+        VoiceChatResponse response = speakService.sceneOpening(
+                request.getSessionId(),
+                request.getScene(),
+                request.getCustomScenario()
+        );
+
+        return ResponseEntity.ok(ResultUtils.success(response));
     }
 }

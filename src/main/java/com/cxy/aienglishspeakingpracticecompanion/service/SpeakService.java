@@ -17,10 +17,6 @@ public interface SpeakService {
 
     ConversationSummaryResponse ConversationSummary(String sessionId);
 
-    /**
-    * @author chenx
-    * @description 针对表【user(用户信息表)】的数据库操作Service
-    * @createDate 2026-06-06 19:43:15
-    */
+    VoiceChatResponse sceneOpening(String sessionId, String scene, String customScenario);
 
 }
