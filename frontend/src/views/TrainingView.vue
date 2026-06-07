@@ -3,13 +3,15 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import ConversationStage from '../components/ConversationStage.vue'
 import RecorderDock from '../components/RecorderDock.vue'
 import SceneRail from '../components/SceneRail.vue'
+import TranscriptReview from '../components/TranscriptReview.vue'
 import { customSceneTemplate, presetScenes, scenes } from '../services/scenes'
 import {
   createSessionId,
   fetchConversationSummary,
   fetchSceneOpening,
   getOrCreateSessionId,
-  sendVoiceMessage
+  sendConfirmedTextMessage,
+  transcribeVoice
 } from '../services/voiceService'
 
 const props = defineProps({
@@ -33,11 +35,13 @@ const messages = ref([
 const isRecording = ref(false)
 const isOpening = ref(false)
 const isSending = ref(false)
+const isTranscribing = ref(false)
 const isSummarizing = ref(false)
 const conversationEnded = ref(false)
 const errorMessage = ref('')
 const summaryError = ref('')
 const conversationSummary = ref(null)
+const pendingTranscript = ref('')
 const audioLevel = ref(0)
 const sessionId = ref(getOrCreateSessionId())
 const mediaRecorder = ref(null)
@@ -59,13 +63,16 @@ const activeScene = computed(() => {
 const canRecord = computed(() => (
   !isOpening.value &&
   !isSending.value &&
+  !isTranscribing.value &&
   !isSummarizing.value &&
+  !pendingTranscript.value &&
   !conversationEnded.value &&
   (!isCustomScene.value || customScenario.value.trim().length > 0)
 ))
 const recordLabel = computed(() => {
   if (isRecording.value) return 'Stop'
   if (isOpening.value) return 'Opening'
+  if (isTranscribing.value) return 'Texting'
   if (isSending.value) return 'Sending'
   if (isSummarizing.value) return 'Reviewing'
   if (conversationEnded.value) return 'Ended'
@@ -86,6 +93,7 @@ function startNewScene() {
   errorMessage.value = ''
   summaryError.value = ''
   conversationSummary.value = null
+  pendingTranscript.value = ''
   conversationEnded.value = false
   requestSceneOpening()
 }
@@ -98,7 +106,9 @@ async function toggleRecording() {
   if (!canRecord.value) {
     errorMessage.value = isOpening.value
       ? 'Please wait for the AI opening question.'
-      : 'Please write a custom scene before recording.'
+      : pendingTranscript.value
+        ? 'Confirm or discard the transcript before recording again.'
+        : 'Please write a custom scene before recording.'
     return
   }
   if (isRecording.value) {
@@ -173,7 +183,7 @@ async function startRecording() {
       stopMeter()
       stream.getTracks().forEach((track) => track.stop())
       streamRef.value = null
-      await sendRecording(mimeType || 'audio/webm')
+      await transcribeRecording(mimeType || 'audio/webm')
     }
 
     mediaRecorder.value = recorder
@@ -197,43 +207,77 @@ function getSupportedMimeType() {
   return types.find((type) => MediaRecorder.isTypeSupported(type))
 }
 
-async function sendRecording(mimeType) {
+async function transcribeRecording(mimeType) {
   if (!audioChunks.value.length) return
-  isSending.value = true
+  isTranscribing.value = true
   errorMessage.value = ''
 
   const audioBlob = new Blob(audioChunks.value, { type: mimeType })
+
+  try {
+    const data = await transcribeVoice({
+      audioBlob,
+      mimeType,
+      sessionId: sessionId.value
+    })
+
+    pendingTranscript.value = data?.userText || ''
+    if (!pendingTranscript.value.trim()) {
+      errorMessage.value = 'No speech text was recognized. Please record again.'
+    }
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || error.message || 'Transcription failed. Please try again.'
+  } finally {
+    isTranscribing.value = false
+    audioChunks.value = []
+    await nextTick()
+  }
+}
+
+async function confirmTranscript() {
+  const userText = pendingTranscript.value.trim()
+  if (!userText) {
+    errorMessage.value = 'Transcript cannot be empty.'
+    return
+  }
+
+  isSending.value = true
+  errorMessage.value = ''
   messages.value.push({
     role: 'user',
-    text: `Voice message sent in ${activeScene.value.name}`,
+    text: userText,
     audioUrl: ''
   })
 
   try {
-    const data = await sendVoiceMessage({
-      audioBlob,
-      mimeType,
+    const data = await sendConfirmedTextMessage({
+      userText,
       sessionId: sessionId.value,
       sceneId: activeSceneId.value,
       customScenario: isCustomScene.value ? customScenario.value : ''
     })
 
+    pendingTranscript.value = ''
     messages.value.push({
       role: 'ai',
       text: data?.aiText || '',
       audioUrl: data?.aiAudioUrl || ''
     })
   } catch (error) {
-    errorMessage.value = error.response?.data?.message || error.message || 'Send failed. Please try again.'
+    errorMessage.value = error.response?.data?.message || error.message || 'AI response failed. Please try again.'
   } finally {
     isSending.value = false
-    audioChunks.value = []
     await nextTick()
   }
 }
 
+function cancelTranscript() {
+  pendingTranscript.value = ''
+  errorMessage.value = ''
+}
+
 async function generateSummary() {
-  if (isSending.value || isRecording.value) {
+  if (isSending.value || isRecording.value || isTranscribing.value || pendingTranscript.value) {
     summaryError.value = 'Please wait until the current voice message is finished.'
     return
   }
@@ -299,11 +343,20 @@ onMounted(() => {
       :conversation-summary="conversationSummary"
       :is-opening="isOpening"
       :is-sending="isSending"
+      :is-transcribing="isTranscribing"
       :is-summarizing="isSummarizing"
       :messages="messages"
       :session-id="sessionId"
       :summary-error="summaryError"
     >
+      <TranscriptReview
+        v-if="pendingTranscript"
+        v-model:transcript="pendingTranscript"
+        :is-sending="isSending"
+        @cancel="cancelTranscript"
+        @confirm="confirmTranscript"
+      />
+
       <template #recorder>
         <RecorderDock
           :audio-level="audioLevel"

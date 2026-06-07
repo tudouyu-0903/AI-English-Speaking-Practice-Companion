@@ -113,9 +113,6 @@ public class FileAsrApp {
                 StringBuilder textBuilder = new StringBuilder();
                 for (int i = 0; i < transcripts.size(); i++) {
                     JsonObject transcript = transcripts.get(i).getAsJsonObject();
-                    if (transcript.has("text")) {
-                        textBuilder.append(transcript.get("text").getAsString()).append(" ");
-                    }
                     if (transcript.has("sentences")) {
                         JsonArray sentences = transcript.getAsJsonArray("sentences");
                         for (int j = 0; j < sentences.size(); j++) {
@@ -124,6 +121,8 @@ public class FileAsrApp {
                                 textBuilder.append(sentence.get("text").getAsString()).append(" ");
                             }
                         }
+                    } else if (transcript.has("text")) {
+                        textBuilder.append(transcript.get("text").getAsString()).append(" ");
                     }
                 }
                 String trim = textBuilder.toString().trim();
