@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import SummaryReport from './SummaryReport.vue'
 
 const props = defineProps({
@@ -23,6 +23,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  isTranscribing: {
+    type: Boolean,
+    default: false
+  },
   isSummarizing: {
     type: Boolean,
     default: false
@@ -42,12 +46,19 @@ const props = defineProps({
 })
 
 const threadEl = ref(null)
+const waitingText = computed(() => {
+  if (props.isOpening) return 'Preparing the first question...'
+  if (props.isTranscribing) return 'Converting your voice to text...'
+  if (props.isSending) return 'AI is preparing your reply...'
+  return ''
+})
 
 watch(
   () => [
     props.messages.length,
     props.isOpening,
     props.isSending,
+    props.isTranscribing,
     props.isSummarizing,
     props.conversationSummary,
     props.summaryError
@@ -64,43 +75,50 @@ watch(
 
 <template>
   <div class="conversation-stage">
-    <header class="stage-header">
-      <div>
-        <p class="eyebrow">{{ activeScene.place }}</p>
-        <h1>{{ activeScene.opening }}</h1>
-      </div>
-      <div class="session-chip">{{ sessionId.slice(0, 18) }}</div>
-    </header>
-
     <div ref="threadEl" class="message-thread">
-      <article
-        v-for="(message, index) in messages"
-        :key="`${message.role}-${index}`"
-        class="message"
-        :class="message.role"
-      >
-        <div class="avatar">{{ message.role === 'ai' ? 'AI' : 'YOU' }}</div>
-        <div class="bubble">
-          <p>{{ message.text }}</p>
-          <audio v-if="message.audioUrl" controls :src="message.audioUrl" :autoplay="message.autoPlay"></audio>
+      <header class="stage-header">
+        <div>
+          <p class="eyebrow">{{ activeScene.place }}</p>
+          <h1>{{ activeScene.opening }}</h1>
         </div>
-      </article>
+        <div class="session-chip">{{ sessionId.slice(0, 18) }}</div>
+      </header>
 
-      <article v-if="isOpening || isSending" class="message ai">
-        <div class="avatar">AI</div>
-        <div class="bubble thinking">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </article>
+      <div class="thread-messages">
+        <article
+          v-for="(message, index) in messages"
+          :key="`${message.role}-${index}`"
+          class="message"
+          :class="message.role"
+        >
+          <div class="avatar">{{ message.role === 'ai' ? 'AI' : 'YOU' }}</div>
+          <div class="bubble">
+            <p>{{ message.text }}</p>
+            <audio v-if="message.audioUrl" controls :src="message.audioUrl" :autoplay="message.autoPlay"></audio>
+          </div>
+        </article>
 
-      <SummaryReport
-        :conversation-ended="conversationEnded"
-        :is-summarizing="isSummarizing"
-        :summary="conversationSummary"
-        :summary-error="summaryError"
-      />
+        <article v-if="isOpening || isSending || isTranscribing" class="message ai">
+          <div class="avatar">AI</div>
+          <div class="bubble thinking">
+            <p>{{ waitingText }}</p>
+            <div class="thinking-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </article>
+
+        <slot></slot>
+
+        <SummaryReport
+          :conversation-ended="conversationEnded"
+          :is-summarizing="isSummarizing"
+          :summary="conversationSummary"
+          :summary-error="summaryError"
+        />
+      </div>
     </div>
 
     <slot name="recorder"></slot>

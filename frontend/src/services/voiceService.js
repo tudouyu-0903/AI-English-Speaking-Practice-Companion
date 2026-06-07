@@ -15,21 +15,29 @@ export function createSessionId() {
   return id
 }
 
-export async function sendVoiceMessage({ audioBlob, mimeType, sessionId, sceneId, customScenario }) {
+export async function transcribeVoice({ audioBlob, mimeType, sessionId }) {
   const formData = new FormData()
   const extension = getAudioExtension(mimeType)
 
   formData.append('audioFile', audioBlob, `voice-${Date.now()}.${extension}`)
   formData.append('sessionId', sessionId)
 
-  if (customScenario?.trim()) {
-    formData.append('customScenario', customScenario.trim())
-  } else {
-    formData.append('scene', sceneId)
-  }
-
-  const response = await axios.post('/api/voice/file-chat', formData, {
+  const response = await axios.post('/api/voice/transcribe', formData, {
     headers: getAuthorizedHeaders({ 'Content-Type': 'multipart/form-data' })
+  })
+
+  assertSuccess(response.data, 'Transcription failed')
+  return response.data.data
+}
+
+export async function sendConfirmedTextMessage({ userText, sessionId, sceneId, customScenario }) {
+  const response = await axios.post('/api/voice/text-chat', {
+    sessionId,
+    userText,
+    scene: customScenario?.trim() ? '' : sceneId,
+    customScenario: customScenario?.trim() || ''
+  }, {
+    headers: getAuthorizedHeaders()
   })
 
   assertSuccess(response.data, 'AI response failed')
