@@ -15,6 +15,10 @@ const props = defineProps({
     type: Object,
     default: null
   },
+  isOpening: {
+    type: Boolean,
+    default: false
+  },
   isSending: {
     type: Boolean,
     default: false
@@ -42,6 +46,7 @@ const threadEl = ref(null)
 watch(
   () => [
     props.messages.length,
+    props.isOpening,
     props.isSending,
     props.isSummarizing,
     props.conversationSummary,
@@ -77,11 +82,11 @@ watch(
         <div class="avatar">{{ message.role === 'ai' ? 'AI' : 'YOU' }}</div>
         <div class="bubble">
           <p>{{ message.text }}</p>
-          <audio v-if="message.audioUrl" controls :src="message.audioUrl"></audio>
+          <audio v-if="message.audioUrl" controls :src="message.audioUrl" :autoplay="message.autoPlay"></audio>
         </div>
       </article>
 
-      <article v-if="isSending" class="message ai">
+      <article v-if="isOpening || isSending" class="message ai">
         <div class="avatar">AI</div>
         <div class="bubble thinking">
           <span></span>

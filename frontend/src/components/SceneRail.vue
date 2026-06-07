@@ -20,6 +20,10 @@ defineProps({
     type: Boolean,
     default: false
   },
+  isOpening: {
+    type: Boolean,
+    default: false
+  },
   isRecording: {
     type: Boolean,
     default: false
@@ -95,7 +99,7 @@ defineEmits(['back', 'generate-summary', 'logout', 'reset-conversation', 'select
       <button
         class="summary-action"
         type="button"
-        :disabled="isSending || isRecording || isSummarizing || conversationEnded"
+        :disabled="isOpening || isSending || isRecording || isSummarizing || conversationEnded"
         @click="$emit('generate-summary')"
       >
         {{ isSummarizing ? 'Generating report' : conversationEnded ? 'Conversation ended' : 'End & summarize' }}

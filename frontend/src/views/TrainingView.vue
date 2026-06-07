@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import ConversationStage from '../components/ConversationStage.vue'
 import RecorderDock from '../components/RecorderDock.vue'
 import SceneRail from '../components/SceneRail.vue'
@@ -7,6 +7,7 @@ import { customSceneTemplate, presetScenes, scenes } from '../services/scenes'
 import {
   createSessionId,
   fetchConversationSummary,
+  fetchSceneOpening,
   getOrCreateSessionId,
   sendVoiceMessage
 } from '../services/voiceService'
@@ -30,6 +31,7 @@ const messages = ref([
   }
 ])
 const isRecording = ref(false)
+const isOpening = ref(false)
 const isSending = ref(false)
 const isSummarizing = ref(false)
 const conversationEnded = ref(false)
@@ -42,6 +44,7 @@ const mediaRecorder = ref(null)
 const audioChunks = ref([])
 const streamRef = ref(null)
 const meterTimer = ref(null)
+const openingRequestId = ref(0)
 
 const isCustomScene = computed(() => activeSceneId.value === 'custom')
 const activeScene = computed(() => {
@@ -54,6 +57,7 @@ const activeScene = computed(() => {
   return presetScenes.find((scene) => scene.id === activeSceneId.value) || presetScenes[0]
 })
 const canRecord = computed(() => (
+  !isOpening.value &&
   !isSending.value &&
   !isSummarizing.value &&
   !conversationEnded.value &&
@@ -61,6 +65,7 @@ const canRecord = computed(() => (
 ))
 const recordLabel = computed(() => {
   if (isRecording.value) return 'Stop'
+  if (isOpening.value) return 'Opening'
   if (isSending.value) return 'Sending'
   if (isSummarizing.value) return 'Reviewing'
   if (conversationEnded.value) return 'Ended'
@@ -69,22 +74,20 @@ const recordLabel = computed(() => {
 
 function selectScene(sceneId) {
   activeSceneId.value = sceneId
-  errorMessage.value = ''
+  startNewScene()
 }
 
 function resetConversation() {
+  startNewScene()
+}
+
+function startNewScene() {
   sessionId.value = createSessionId()
-  messages.value = [
-    {
-      role: 'ai',
-      text: `New scene loaded: ${activeScene.value.name}. ${activeScene.value.opening}`,
-      audioUrl: ''
-    }
-  ]
   errorMessage.value = ''
   summaryError.value = ''
   conversationSummary.value = null
   conversationEnded.value = false
+  requestSceneOpening()
 }
 
 async function toggleRecording() {
@@ -93,7 +96,9 @@ async function toggleRecording() {
     return
   }
   if (!canRecord.value) {
-    errorMessage.value = 'Please write a custom scene before recording.'
+    errorMessage.value = isOpening.value
+      ? 'Please wait for the AI opening question.'
+      : 'Please write a custom scene before recording.'
     return
   }
   if (isRecording.value) {
@@ -101,6 +106,54 @@ async function toggleRecording() {
     return
   }
   await startRecording()
+}
+
+async function requestSceneOpening() {
+  const requestId = openingRequestId.value + 1
+  openingRequestId.value = requestId
+  isOpening.value = true
+  errorMessage.value = ''
+  messages.value = [
+    {
+      role: 'ai',
+      text: `Preparing ${activeScene.value.name}...`,
+      audioUrl: ''
+    }
+  ]
+
+  try {
+    const data = await fetchSceneOpening({
+      sessionId: sessionId.value,
+      sceneId: activeSceneId.value,
+      customScenario: isCustomScene.value ? customScenario.value : ''
+    })
+
+    if (requestId !== openingRequestId.value) return
+
+    messages.value = [
+      {
+        role: 'ai',
+        text: data?.aiText || activeScene.value.opening,
+        audioUrl: data?.aiAudioUrl || '',
+        autoPlay: true
+      }
+    ]
+  } catch (error) {
+    if (requestId !== openingRequestId.value) return
+
+    messages.value = [
+      {
+        role: 'ai',
+        text: activeScene.value.opening,
+        audioUrl: ''
+      }
+    ]
+    errorMessage.value = error.response?.data?.message || error.message || 'Scene opening failed. You can still record your answer.'
+  } finally {
+    if (requestId === openingRequestId.value) {
+      isOpening.value = false
+    }
+  }
 }
 
 async function startRecording() {
@@ -213,6 +266,10 @@ function stopMeter() {
   meterTimer.value = null
   audioLevel.value = 0
 }
+
+onMounted(() => {
+  requestSceneOpening()
+})
 </script>
 
 <template>
@@ -222,6 +279,7 @@ function stopMeter() {
       :active-scene="activeScene"
       :active-scene-id="activeSceneId"
       :conversation-ended="conversationEnded"
+      :is-opening="isOpening"
       :is-custom-scene="isCustomScene"
       :is-recording="isRecording"
       :is-sending="isSending"
@@ -239,6 +297,7 @@ function stopMeter() {
       :active-scene="activeScene"
       :conversation-ended="conversationEnded"
       :conversation-summary="conversationSummary"
+      :is-opening="isOpening"
       :is-sending="isSending"
       :is-summarizing="isSummarizing"
       :messages="messages"
