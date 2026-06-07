@@ -106,5 +106,35 @@ public class SpeakServiceImpl implements SpeakService {
         return response;
     }
 
+    /**
+     * 设置对话场景开场白
+     * @param sessionId
+     * @param scene
+     * @param customScenario
+     * @return
+     */
+    @Override
+    public VoiceChatResponse sceneOpening(String sessionId, String scene, String customScenario) {
+        String aiReplyText;
+        //1. 判断场景是自定义的还是选择场景
+        if (customScenario == null || customScenario.isBlank()) {
+            //获取场景开场白
+            aiReplyText = speakApp.sceneOpening(sessionId, scene);
+        } else {
+            aiReplyText = speakApp.customSceneOpening(sessionId, customScenario);
+        }
+
+        if (aiReplyText == null || aiReplyText.isBlank()) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI开场白为空");
+        }
+        //2. 将AI开场白转换成语音
+        String speechUrl = ttsApp.textToSpeechUrl(aiReplyText);
+        if (speechUrl == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "语音合成失败");
+        }
+
+        return new VoiceChatResponse(aiReplyText, speechUrl);
+    }
+
 
 }

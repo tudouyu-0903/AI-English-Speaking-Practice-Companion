@@ -212,4 +212,58 @@ public class SpeakApp {
         log.info("summary content:{}", content);
         return content;
     }
+
+    /***
+     * 预设场景开场白
+     * @param sessionId
+     * @param scene
+     * @return
+     */
+    public String sceneOpening(String sessionId, String scene) {
+        if (scene == null || scene.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "场景不能为空");
+        }
+
+        String scenePrompt = ScenePromptFactory.buildFinalPrompt(scene);
+
+        ChatResponse chatResponse = chatClient.prompt()
+                .system(scenePrompt)
+                .user("""
+                    Start this roleplay now.
+                    Speak as the scenario character.
+                    Ask the first short question to the user.
+                    Do not explain the task.
+                    """)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .call()
+                .chatResponse();
+
+        return chatResponse.getResult().getOutput().getText();
+    }
+
+    /***
+     * 自定义场景开场白
+     * @param sessionId
+     * @param customScenario
+     * @return
+     */
+    public String customSceneOpening(String sessionId, String customScenario) {
+        String scenePrompt = ScenePromptFactory.buildCustomPrompt(customScenario);
+
+        ChatResponse chatResponse = chatClient.prompt()
+                .system(scenePrompt)
+                .user("""
+                    Start this custom roleplay now.
+                    Speak as the scenario character.
+                    Ask the first short question to the user.
+                    Do not explain the task.
+                    """)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .call()
+                .chatResponse();
+
+        return chatResponse.getResult().getOutput().getText();
+    }
 }
