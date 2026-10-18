@@ -103,7 +103,7 @@ async function submitAuth() {
 
       <label class="field-control">
         <span>Password</span>
-        <input v-model="form.password" type="password" autocomplete="current-password" minlength="6" required />
+        <input v-model="form.password" type="password" autocomplete="current-password" minlength="8" required />
       </label>
 
       <div v-if="isRegisterMode" class="optional-grid">
